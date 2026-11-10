@@ -141,7 +141,7 @@ pre{background:var(--deep);border:1px solid var(--line);padding:12px;overflow-x:
 
 <section id="p-setup" class="pane sec" hidden>
   <h2>Relay</h2>
-  <p>A web page can’t send RTMP. This page sends one WebRTC (WHIP) stream to your relay, and the relay passes it to Twitch, TikTok and Instagram. Without a relay, Record only still works.</p>
+  <p>A web page can’t send RTMP. This page sends one WebRTC (WHIP) stream to your relay, and the relay fans it out over RTMP to whichever platforms you’ve set up below — Twitch, Instagram, YouTube and TikTok, all four at once if you want, each running on its own. Without a relay, Record only still works.</p>
   <div class="ctl" style="margin-top:14px">
     <div class="field"><label class="lab mono" for="iWhip">WHIP URL</label><input id="iWhip" type="url" placeholder="https://stream.example.com/live/whip" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
     <div class="field"><label class="lab mono" for="iTok">Bearer token (optional)</label><input id="iTok" type="password" autocomplete="off"></div>
@@ -154,11 +154,12 @@ pre{background:var(--deep);border:1px solid var(--line);padding:12px;overflow-x:
 
   <h3 style="margin-top:34px">What each platform needs</h3>
   <dl>
-    <dt>Twitch</dt><dd>Stream key from Creator Dashboard → Settings → Stream. It doesn’t change. Twitch also has an undocumented beta WHIP endpoint; this app doesn’t use it.</dd>
-    <dt>TikTok</dt><dd>1,000+ followers and age 18+, and even then not every account gets a stream key. The server URL and key come from LIVE Producer on a computer and change every stream.</dd>
-    <dt>Instagram</dt><dd>A Creator or Business account. On instagram.com from a computer: Create → Live video shows a server URL and key. They change every stream. Personal accounts can’t.</dd>
+    <dt>Twitch</dt><dd>Create an account at twitch.tv — no follower or age minimum. Stream key is under Creator Dashboard → Settings → Stream. It doesn’t change, so you only enter it once. Twitch also has an undocumented beta WHIP endpoint; this app doesn’t use it.</dd>
+    <dt>YouTube</dt><dd>Needs a Google account with a channel enabled for live streaming at youtube.com/live_dashboard, and you must be 16+. The first time, YouTube says it can take up to 24 hours to turn on. After that, the Stream URL and key are in YouTube Studio → Create → Go live → Stream, and they stay the same every time — like Twitch, once is enough.</dd>
+    <dt>TikTok</dt><dd>1,000+ followers and age 18+, and TikTok wants a track record streaming from its mobile app first. Even then, applying for LIVE Studio / stream-key access (in the app’s Creator Tools) isn’t guaranteed to be approved. The server URL and key come from LIVE Producer on a computer and change every stream.</dd>
+    <dt>Instagram</dt><dd>A Creator or Business account — switch under Settings → Account type and tools. On instagram.com from a computer: Create → Live video shows a server URL and key. They change every stream. Personal accounts can’t.</dd>
   </dl>
-  <p>So for TikTok and Instagram, run one command on the relay with the fresh URL and key before each stream. The steps are in the recipe below. Twitch only needs it once.</p>
+  <p>So for TikTok and Instagram, run one command on the relay with the fresh URL and key before each stream; the steps are in the recipe below. Twitch and YouTube only need that once. You can run all four at the same time — each is its own push on the relay, so starting or stopping one never touches the others — just mind the relay’s CPU and upload bandwidth as you add destinations (see “Before you rely on it” below).</p>
 
   <details><summary>Relay recipe (MediaMTX, Caddy, ffmpeg)</summary>
     <p>Serve this page from the relay itself with Caddy, so the page and the WHIP endpoint share one origin and one certificate. Replace <span class="cmd">stream.example.com</span> with your domain everywhere. Enter <span class="cmd">https://stream.example.com/live/whip</span> as the WHIP URL above, and the value of <span class="cmd">WHIP_TOKEN</span> as the Bearer token.</p>
@@ -242,14 +243,15 @@ esac</pre>
     <ol>
       <li>Start the stream in this app.</li>
       <li>On a computer, copy the fresh server URL and key from the platform’s producer page.</li>
-      <li>Run <span class="cmd">ssh -t relay sudo dest set instagram</span> (or <span class="cmd">tiktok</span>, <span class="cmd">twitch</span>) and paste both when asked.</li>
-      <li>Press Go live on the platform once its preview appears.</li>
-      <li>Afterwards run <span class="cmd">sudo dest off instagram</span>.</li>
+      <li>Run <span class="cmd">ssh -t relay sudo dest set instagram</span> (swap in <span class="cmd">tiktok</span>, <span class="cmd">twitch</span> or <span class="cmd">youtube</span>) and paste both when asked. Repeat for every platform you want live right now; they run independently. Do this once for Twitch and YouTube and leave them running — their keys don’t change.</li>
+      <li>Press Go live on each platform once its preview appears.</li>
+      <li>Afterwards run <span class="cmd">sudo dest off instagram</span> (or <span class="cmd">tiktok</span>) for the one-time keys. Leave Twitch and YouTube running if you’ll reuse the same key next time.</li>
     </ol>
     <h3>Before you rely on it</h3>
     <ul class="pl">
       <li>Run MediaMTX once in the foreground first. It rejects config keys it doesn’t know, and recent releases renamed some of them.</li>
-      <li>Re-encoding two destinations at 720p30 should fit on 2 vCPUs, but that is untested. A 1 vCPU plan only suits <span class="cmd">-c:v copy</span>. Check the provider’s live price.</li>
+      <li>Re-encoding two destinations at 720p30 should fit on 2 vCPUs, but that is untested, and all four at once will want more — size up and watch load average the first time you try it. A 1 vCPU plan only suits <span class="cmd">-c:v copy</span>. Check the provider’s live price.</li>
+      <li>Each destination is a separate re-encoded upload from the relay, so four at once needs roughly four times one destination’s bitrate in upload bandwidth — check your provider’s uplink, not just the download speed.</li>
       <li>At home you need UDP and TCP 8189 plus 80 and 443 forwarded, no CGNAT, and dynamic DNS.</li>
       <li>If audio is missing, read the MediaMTX log. Version 1.15.5 reported Opus errors with mono audio (issue 5293).</li>
     </ul>
@@ -271,6 +273,8 @@ esac</pre>
     <li>iPhone Safari can’t capture the phone’s own screen or another app’s sound. Streaming a game played on the phone itself needs a native app, or the Mac route above.</li>
     <li>On the phone the screen must stay on with this page in front. Locking it or switching apps stops the camera and the recording.</li>
     <li>Recording is written to browser storage every couple of seconds. A crash loses the last few seconds, and the session reappears under Sessions marked Interrupted. Chrome’s MP4 mode delivers its first media only after about 10 seconds, so a crash before then loses the whole recording; on Chrome this page records WebM instead. Save to Files soon after any stream, because browsers can clear storage when space is short.</li>
+      <li>Keyboard: M adds a mark. Control+Shift+S ends the recording, even if the End button misbehaves. Pressing End (or that shortcut) a second time while it says Finishing forces it to finish at once. Shortcuts only work while this tab has keyboard focus.</li>
+      <li>If the browser runs out of room during a recording, the page warns you, keeps recording from memory, and End still works. Keep the tab open, press End, and Save straight away. Closing the tab before saving loses whatever was held only in memory.</li>
   </ul>
 </section>
 </main>
@@ -304,13 +308,18 @@ function toast(m){const t=$('#toast');t.textContent=m;t.hidden=false;clearTimeou
 function h(tag,props,...kids){const e=document.createElement(tag);Object.assign(e,props||{});kids.forEach(k=>e.append(k));return e}
 
 /* ---------- storage ---------- */
-const db={d:null,m:{sessions:new Map(),chunks:new Map()},
+const db={d:null,bad:false,m:{sessions:new Map(),chunks:new Map()},
  open(){return new Promise(r=>{try{const q=indexedDB.open('stream',1);q.onupgradeneeded=()=>{q.result.createObjectStore('sessions',{keyPath:'id'});q.result.createObjectStore('chunks',{keyPath:'k'})};q.onsuccess=()=>{this.d=q.result;r()};q.onerror=q.onblocked=()=>r()}catch{r()}})},
- run(st,mode,f){return new Promise((res,rej)=>{const t=this.d.transaction(st,mode);const q=f(t.objectStore(st));t.oncomplete=()=>res(q&&q.result);t.onerror=t.onabort=()=>rej(t.error)})},
- put(st,v){if(!this.d){this.m[st].set(v.id||v.k,v);return Promise.resolve()}return this.run(st,'readwrite',s=>s.put(v))},
- all(st){if(!this.d)return Promise.resolve([...this.m[st].values()]);return this.run(st,'readonly',s=>s.getAll())},
- async chunks(id){if(!this.d)return [...this.m.chunks.values()].filter(c=>c.k.startsWith(id+':')).sort((a,b)=>a.k<b.k?-1:1).map(c=>c.data);const rows=await this.run('chunks','readonly',s=>s.getAll(IDBKeyRange.bound(id+':',id+':\uffff')));return rows.map(c=>c.data)},
- async del(id){if(!this.d){this.m.sessions.delete(id);[...this.m.chunks.keys()].filter(k=>k.startsWith(id+':')).forEach(k=>this.m.chunks.delete(k));return}await this.run('sessions','readwrite',s=>s.delete(id));await this.run('chunks','readwrite',s=>s.delete(IDBKeyRange.bound(id+':',id+':\uffff')))}};
+ run(st,mode,f){return new Promise((res,rej)=>{try{const t=this.d.transaction(st,mode);const q=f(t.objectStore(st));t.oncomplete=()=>res(q&&q.result);t.onerror=t.onabort=()=>rej(t.error)}catch(e){rej(e)}})},
+ /* A write never throws. If the browser refuses it (storage full), the record is kept in memory and merged back in on read. */
+ put(st,v){const key=v.id||v.k;if(!this.d){this.m[st].set(key,v);return Promise.resolve(true)}
+  return this.run(st,'readwrite',x=>x.put(v)).then(()=>{this.m[st].delete(key);return true},e=>{this.m[st].set(key,v);if(!this.bad){this.bad=true;onStoreFail(e)}return false})},
+ async all(st){const mem=[...this.m[st].values()];if(!this.d)return mem;let rows=[];try{rows=await this.run(st,'readonly',x=>x.getAll())}catch{}const ids=new Set(mem.map(x=>x.id||x.k));return [...rows.filter(x=>!ids.has(x.id||x.k)),...mem]},
+ async chunks(id){const mem=[...this.m.chunks.values()].filter(c=>c.k.startsWith(id+':'));let rows=[];if(this.d)rows=await this.run('chunks','readonly',x=>x.getAll(IDBKeyRange.bound(id+':',id+':\uffff')));const have=new Set(mem.map(c=>c.k));return [...rows.filter(c=>!have.has(c.k)),...mem].sort((a,b)=>a.k<b.k?-1:1).map(c=>c.data)},
+ async del(id){this.m.sessions.delete(id);[...this.m.chunks.keys()].filter(k=>k.startsWith(id+':')).forEach(k=>this.m.chunks.delete(k));if(!this.d)return;try{await this.run('sessions','readwrite',x=>x.delete(id));await this.run('chunks','readwrite',x=>x.delete(IDBKeyRange.bound(id+':',id+':\uffff')))}catch{}}};
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+function onStoreFail(e){const t=S.active?hms((performance.now()-S.t0)/1000):'';if(S.sess&&!S.sess.note)S.sess.note='Storage ran out'+(t?' at '+t:'');
+ say((e&&e.name==='QuotaExceededError'?'This browser has run out of room for recordings. ':'This browser could not save to its storage. ')+'Recording continues from memory. Keep this tab open, press End, then press Save in Sessions straight away, and free up disk space.','err');toast('Storage is full. Keep this tab open.')}
 
 /* ---------- inputs ---------- */
 function fill(sel,items,cur,pre,first){const s=$(sel);s.textContent='';if(first)s.append(h('option',{value:'',textContent:first}));items.forEach((x,i)=>s.append(h('option',{value:x.deviceId,textContent:x.label||pre+' '+(i+1)})));if(cur&&items.some(x=>x.deviceId===cur))s.value=cur}
@@ -346,6 +355,7 @@ function build(){
   const vt=S.media.getVideoTracks()[0],outV=S.scr?composite(vt):vt;
   const mics=S.media.getAudioTracks(),gt=S.gmedia?S.gmedia.getAudioTracks():[],sa=S.scr?S.scr.getAudioTracks():[],all=[...mics,...gt,...sa];
   const ac=S.actx||(S.actx=mkAC());let at=all[0]||null;S.dly=null;
+  if(ac&&!ac.guarded){ac.guarded=true;ac.onstatechange=()=>{if(ac.state!=='running')ac.resume().catch(()=>{})}}
   /* disconnect the previous graph, otherwise every device change leaves nodes running */
   S.nodes.forEach(n=>{try{n.disconnect()}catch{}});S.nodes=[];
   const src=t=>{const n=ac.createMediaStreamSource(new MediaStream([t]));S.nodes.push(n);return n};
@@ -377,7 +387,10 @@ async function startRec(){
   const r=new MediaRecorder(S.out,{...(mime?{mimeType:mime}:{}),videoBitsPerSecond:QUAL[cfg.q].bps,audioBitsPerSecond:128000});
   const sess={id,name:'Stream '+d.getDate()+' '+d.toLocaleString('en-GB',{month:'short'})+' '+pad(d.getHours())+':'+pad(d.getMinutes()),started:Date.now(),mime:r.mimeType||mime||'video/webm',marks:[],status:'recording',dur:0,size:0};
   let seq=0;S.sess=sess;S.rec=r;S.t0=performance.now();
-  r.ondataavailable=e=>{if(!e.data||!e.data.size)return;const k=id+':'+String(seq++).padStart(6,'0');sess.size+=e.data.size;sess.dur=(performance.now()-S.t0)/1000;S.chain=S.chain.then(()=>db.put('chunks',{k,data:e.data})).then(()=>db.put('sessions',{...sess})).catch(()=>say('Storage is full or unavailable. Save this session as soon as you can.','err'))};
+  S.lastChunk=performance.now();S.stallShown=S.lowShown=false;db.bad=false;
+  r.ondataavailable=e=>{if(!e.data||!e.data.size)return;S.lastChunk=performance.now();const k=id+':'+String(seq++).padStart(6,'0');sess.size+=e.data.size;sess.dur=(performance.now()-S.t0)/1000;S.chain=S.chain.then(()=>db.put('chunks',{k,data:e.data})).then(()=>db.put('sessions',{...sess})).catch(()=>{})};
+  r.onstop=()=>{if(S.active&&S.rec===r)say('The recorder stopped on its own at '+hms((performance.now()-S.t0)/1000)+'. Press End to save what was recorded.','err')};
+  r.onerror=ev=>say('The recorder reported an error ('+((ev&&ev.error&&ev.error.name)||'unknown')+'). Press End to save what was recorded.','err');
   r.start(2000);await db.put('sessions',{...sess});
   if(!db.d)say('This browser can’t store recordings safely (private mode?). They stay in memory until you save them.');
   return true}
@@ -395,14 +408,38 @@ async function begin(live){
   S.active=true;wl(true);say('');setUi();renderLiveMarks();
   if(live)goLive().catch(e=>{stopLive();say('Could not reach the relay ('+(e.message||e)+'). Still recording.','err');setUi()})}
 async function end(){
-  if(S.stopping)return;S.stopping=true;
-  stopLive();
-  const r=S.rec,s=S.sess;S.rec=null;
-  if(r&&s){s.dur=(performance.now()-S.t0)/1000;if(r.state!=='inactive')await new Promise(res=>{r.onstop=res;r.stop()});await S.chain;s.status='done';await db.put('sessions',{...s});blobs.set(s.id,new Blob(await db.chunks(s.id),{type:baseMime(s.mime)}))}
-  S.sess=null;S.active=false;wl(false);S.stopping=false;
+  if(S.stopping){if(S.forceRes)S.forceRes();return}
+  S.stopping=true;const eb=$('#btnEnd');eb.textContent='Finishing…';let bad='';
+  const forced=new Promise(r=>{S.forceRes=r}),hint=setTimeout(()=>{if(S.stopping)eb.textContent='Force finish'},4000);
+  const wait=(p,ms)=>Promise.race([p,sleep(ms),forced]);
+  try{
+    stopLive();
+    const r=S.rec,x=S.sess;S.rec=null;
+    if(r&&x){
+      x.dur=(performance.now()-S.t0)/1000;
+      if(r.state!=='inactive')await wait(new Promise(res=>{r.onstop=res;try{r.stop()}catch{res()}}),6000);
+      await wait(S.chain,20000);
+      x.status='done';
+      await wait(db.put('sessions',{...x}),8000);
+      if(!db.m.sessions.has(x.id)&&!(await Promise.race([db.run('sessions','readonly',q=>q.get(x.id)).then(v=>v&&v.status==='done',()=>false),sleep(500)])))db.m.sessions.set(x.id,{...x})}
+  }catch(e){bad=(e&&e.message)||String(e)}
+  clearTimeout(hint);S.forceRes=null;
+  S.sess=null;S.active=false;S.stopping=false;eb.textContent='End';
+  try{wl(false)}catch{}
   /* the game window may have closed mid-stream; drop the dead capture so the next session starts clean */
-  if(S.scr&&S.scr.getVideoTracks().every(t=>t.readyState==='ended')){S.scr=null;S.game=false;if(S.media)build()}
-  setUi();renderLiveMarks();renderSessions();showSpace();toast('Saved to Sessions.')}
+  if(S.scr&&S.scr.getVideoTracks().every(t=>t.readyState==='ended')){S.scr=null;S.game=false;if(S.media)try{build()}catch{}}
+  setUi();renderLiveMarks();renderSessions();showSpace();
+  if(bad)say('Something went wrong while ending ('+bad+'). The recording is under Sessions: open it and press Save.','err');
+  else if(db.bad&&db.m.chunks.size)say('Storage ran out during this recording, so the video is held in memory. Open Sessions and press Save now, before you close this tab.','err');
+  else toast('Saved to Sessions.')}
+/* Watchdog while recording: warns if the recorder stalls or storage is nearly full */
+setInterval(async()=>{
+  if(!S.active||!S.rec)return;const now=performance.now();
+  if(S.actx&&S.actx.state!=='running')S.actx.resume().catch(()=>{});
+  if(now-S.lastChunk>30000&&!S.stallShown){S.stallShown=true;say('The recorder has not produced any video for '+Math.round((now-S.lastChunk)/1000)+' seconds. Press End to save what was captured, then start a new recording.','err')}
+  try{const e=await navigator.storage.estimate(),bps=(QUAL[cfg.q].bps+128000)/8,left=(e.quota-e.usage)/bps/60;showSpace();
+   if(left<10&&!S.lowShown){S.lowShown=true;say('Storage is nearly full: about '+Math.max(0,Math.floor(left))+' minutes of recording left. Press End soon, save, and free up disk space.','err')}}catch{}
+},5000);
 
 /* ---------- WHIP ---------- */
 const waitIce=(pc,ms)=>new Promise(res=>{if(pc.iceGatheringState==='complete')return res();const f=()=>{if(pc.iceGatheringState==='complete'){pc.removeEventListener('icegatheringstatechange',f);res()}};pc.addEventListener('icegatheringstatechange',f);setTimeout(res,ms)});
@@ -432,7 +469,7 @@ function setUi(){
   $('#fGa').hidden=$('#fGd').hidden=$('#fCorner').hidden=!S.game;
   tickStat()}
 function tickStat(){const st=$('#stat');
-  if(S.active){const t=hms((performance.now()-S.t0)/1000);st.textContent=(S.live?'Live · ':S.pc?'Connecting · ':'')+'Rec '+t;st.className='mono on';$('#ovT').textContent=(S.live?'LIVE · ':S.pc?'CONNECTING · ':'')+'REC '+t}
+  if(S.active){const t=hms((performance.now()-S.t0)/1000);st.textContent=(S.live?'Live · ':S.pc?'Connecting · ':'')+'Rec '+t+(db.bad?' · storage full':'');st.className='mono on';$('#ovT').textContent=(S.live?'LIVE · ':S.pc?'CONNECTING · ':'')+'REC '+t}
   else{st.textContent=S.out?'Camera ready':'Idle';st.className='mono'}
   if(S.an){const d=new Uint8Array(S.an.fftSize);S.an.getByteTimeDomainData(d);let m=0;for(const v of d)m=Math.max(m,Math.abs(v-128));$('#lvl b').style.width=Math.min(100,m/128*140)+'%'}}
 setInterval(tickStat,250);
@@ -443,7 +480,8 @@ $('#btnCam').onclick=ensureInputs;
 $('#btnRec').onclick=()=>begin(false);$('#btnLive').onclick=()=>begin(true);$('#btnEnd').onclick=end;
 $('#btnMark').onclick=()=>addMark('Moment');
 $$('.chip').forEach(c=>c.onclick=()=>addMark(c.textContent));
-document.addEventListener('keydown',e=>{if((e.key==='m'||e.key==='M')&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&!e.repeat&&S.active&&!/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName))addMark('Moment')});
+document.addEventListener('keydown',e=>{if(e.ctrlKey&&e.shiftKey&&!e.metaKey&&!e.altKey&&e.code==='KeyS'&&(S.active||S.stopping)){e.preventDefault();toast(S.stopping?'Forcing finish…':'Ending…');end();return}
+  if((e.key==='m'||e.key==='M')&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&!e.repeat&&S.active&&!/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName))addMark('Moment')});
 /* arrow keys move between tabs, as the tablist role promises */
 $('nav').addEventListener('keydown',e=>{const tabs=$$('nav button'),i=tabs.indexOf(document.activeElement);if(i<0)return;let j=-1;if(e.key==='ArrowRight')j=(i+1)%tabs.length;else if(e.key==='ArrowLeft')j=(i+tabs.length-1)%tabs.length;else if(e.key==='Home')j=0;else if(e.key==='End')j=tabs.length-1;if(j<0)return;e.preventDefault();tabs[j].focus();tabs[j].click()});
 $('#btnOff').onclick=()=>{if(S.active)return;if(S.scr)S.scr.getTracks().forEach(t=>t.stop());S.game=false;stopInputs();say('');setUi()};
@@ -487,7 +525,7 @@ function card(s){
   const name=h('input',{className:'name',type:'text',value:s.name,'aria-label':'Session name'});
   /* while recording, the live session object is the one that keeps being written, so rename that */
   name.onchange=()=>{s.name=name.value.trim()||s.name;name.value=s.name;if(S.sess&&S.sess.id===s.id){S.sess.name=s.name;db.put('sessions',{...S.sess})}else db.put('sessions',s)};
-  const meta=h('p',{className:'meta mono',textContent:[new Date(s.started).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}),hms(s.dur),fmtSize(s.size),s.mime.includes('mp4')?'mp4':'webm',s.marks.length+' marks',broken?'Interrupted':cur?'Recording':''].filter(Boolean).join(' · ')});
+  const meta=h('p',{className:'meta mono',textContent:[new Date(s.started).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}),hms(s.dur),fmtSize(s.size),s.mime.includes('mp4')?'mp4':'webm',s.marks.length+' marks',s.note||'',broken?'Interrupted':cur?'Recording':''].filter(Boolean).join(' · ')});
   const rev=h('div'),mks=h('div');
   const save=h('button',{className:'btn go',textContent:'Save video + marks',disabled:cur});save.onclick=()=>saveSession(s.id);
   const review=h('button',{className:'btn',textContent:'Review',disabled:cur});
@@ -508,7 +546,7 @@ $('#selQ').value=cfg.q;$('#selCorner').value=cfg.corner;
 
 /* ---------- boot ---------- */
 (()=>{const c=document.createElement('canvas');c.width=c.height=180;const g=c.getContext('2d');g.fillStyle='#53393a';g.fillRect(0,0,180,180);g.fillStyle='#c1798d';g.beginPath();g.arc(90,90,34,0,7);g.fill();document.head.append(h('link',{rel:'apple-touch-icon',href:c.toDataURL('image/png')}))})();
-window.addEventListener('beforeunload',e=>{if(S.active){e.preventDefault();e.returnValue=''}});
+window.addEventListener('beforeunload',e=>{if(S.active||db.m.chunks.size){e.preventDefault();e.returnValue=''}});
 (async()=>{
   await db.open();showSpace();await renderSessions();$('#hScr').hidden=CAN_SCREEN;
   const lost=[...sessions.values()].filter(s=>s.status==='recording').length;
