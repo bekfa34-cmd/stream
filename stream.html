@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#1a1112">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Stream">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<title>Stream</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%2353393a'/%3E%3Ccircle cx='16' cy='16' r='6' fill='%23c1798d'/%3E%3C/svg%3E">
+<style>
+:root{--ink:#1a1112;--deep:#241819;--line:#3a2a2b;--cocoa:#53393a;--rose:#c1798d;--mauve:#835965;--paper:#f4e9ea;--dim:#c4a7ae;
+--serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;--mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+*{box-sizing:border-box;margin:0}
+[hidden]{display:none!important}
+html{background:var(--ink);-webkit-text-size-adjust:100%}
+body{min-height:100vh;background:var(--ink);color:var(--paper);font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding-bottom:calc(96px + env(safe-area-inset-bottom))}
+.mono{font:500 11px/1.4 var(--mono);letter-spacing:.07em;text-transform:uppercase}
+h1,h2{font-family:var(--serif);font-weight:400}
+h2{font-size:26px;line-height:1.15;margin:0 0 6px}
+h3{font:600 15px/1.3 -apple-system,sans-serif;margin:22px 0 4px}
+p,dd{color:var(--dim)}
+a{color:var(--rose)}
+.top{position:sticky;top:0;z-index:5;background:var(--ink);border-bottom:1px solid var(--mauve);padding:env(safe-area-inset-top) max(20px,env(safe-area-inset-right)) 0 max(20px,env(safe-area-inset-left))}
+.r1{display:flex;justify-content:space-between;align-items:baseline;gap:12px;max-width:1040px;margin:0 auto;padding:12px 0 2px}
+.word{font-size:28px;font-style:italic;line-height:1}
+#stat{color:var(--dim)}#stat.on{color:var(--rose)}
+nav{display:flex;gap:24px;max-width:1040px;margin:0 auto}
+nav button{background:none;border:0;border-bottom:2px solid transparent;color:var(--dim);font:inherit;font-size:15px;min-height:44px;padding:8px 0;cursor:pointer}
+nav button[aria-selected=true]{color:var(--paper);border-color:var(--rose)}
+main{max-width:1080px;margin:0 auto;padding:22px max(20px,env(safe-area-inset-right)) 0 max(20px,env(safe-area-inset-left))}
+.live{display:grid;gap:22px}
+@media(min-width:900px){.live{grid-template-columns:minmax(0,1.55fr) minmax(300px,1fr);gap:40px;align-items:start}}
+.view{position:relative;background:#0f0809;border:1px solid var(--line);aspect-ratio:16/9;max-height:64vh;display:grid;place-items:center;overflow:hidden}
+.view video{width:100%;height:100%;object-fit:contain;display:block}
+.vmsg{position:absolute;inset:0;display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-end;gap:12px;padding:20px}
+.ov{position:absolute;left:12px;top:10px;background:var(--ink);padding:3px 7px;color:var(--rose)}
+.lvl{position:absolute;left:0;right:0;bottom:0;height:4px;background:var(--line)}
+.lvl b{display:block;height:100%;width:0;background:var(--rose)}
+.cmd{font:500 12px/1.5 var(--mono);color:var(--paper);overflow-wrap:anywhere}
+.marks{list-style:none;padding:0;margin-top:14px}
+.marks li{display:flex;gap:14px;padding:7px 0;border-top:1px solid var(--line)}
+.marks .t{color:var(--rose);flex:none}
+.ctl{display:flex;flex-direction:column;gap:18px}
+.field{display:flex;flex-direction:column;gap:6px}
+.lab{color:var(--dim)}
+.two{display:grid;grid-template-columns:1fr auto;gap:8px}
+select,input[type=text],input[type=url],input[type=password],input[type=number]{width:100%;min-height:46px;padding:0 12px;background:var(--deep);border:1px solid var(--mauve);border-radius:3px;color:var(--paper);font:inherit;font-size:16px}
+.btn{min-height:48px;padding:0 20px;border:1px solid var(--mauve);background:var(--cocoa);color:var(--paper);border-radius:3px;font:600 15px/1 -apple-system,sans-serif;cursor:pointer}
+.btn.go{background:var(--rose);border-color:var(--rose);color:var(--ink)}
+.btn.ghost{background:none}
+.btn:disabled,.chip:disabled{opacity:.4;cursor:default}
+input::placeholder{color:var(--dim);opacity:1}
+select:focus-visible,input:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid var(--rose);outline-offset:2px}
+.seg{display:grid;grid-template-columns:1fr 1fr}
+.seg button{min-height:46px;background:var(--deep);border:1px solid var(--mauve);color:var(--dim);font:inherit;font-size:15px;cursor:pointer}
+.seg button:first-child{border-radius:3px 0 0 3px}.seg button:last-child{border-radius:0 3px 3px 0;border-left:0}
+.seg button[aria-pressed=true]{background:var(--cocoa);color:var(--paper);box-shadow:inset 0 -3px 0 var(--rose)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{min-height:40px;padding:0 14px;background:none;border:1px solid var(--mauve);border-radius:3px;color:var(--paper);font:inherit;font-size:14px;cursor:pointer}
+.hint{font-size:13px}
+.alert{display:flex;gap:12px;border-left:3px solid var(--rose);background:var(--deep);padding:10px 12px}
+.alert b{color:var(--rose);flex:none;padding-top:2px}.alert span{color:var(--paper);font-size:15px}
+.bar{display:none;position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--ink);border-top:1px solid var(--mauve);padding:12px max(20px,env(safe-area-inset-right)) calc(12px + env(safe-area-inset-bottom)) max(20px,env(safe-area-inset-left))}
+body[data-tab=live] .bar{display:block}
+.bar>div{display:flex;gap:10px;max-width:1040px;margin:0 auto}
+.bar .btn{flex:1}
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(88px + env(safe-area-inset-bottom));z-index:7;background:var(--paper);color:var(--ink);padding:9px 14px;border-radius:3px;font-size:14px;max-width:90vw}
+.sess{border-top:1px solid var(--mauve);padding:16px 0}
+.sess input.name{font-family:var(--serif);font-size:20px;background:none;border:0;border-bottom:1px dashed var(--line);border-radius:0;padding:0;min-height:36px}
+.sess .meta{color:var(--dim);margin:4px 0 12px}
+.acts{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.acts .btn{min-height:44px;font-size:14px}
+.sess video{width:100%;max-height:50vh;background:#0f0809;margin:6px 0}
+.mk{display:grid;grid-template-columns:auto 1fr auto auto;gap:8px;align-items:center;padding:4px 0}
+.mk input{min-height:40px;font-size:15px}
+.mk .btn{min-height:40px;padding:0 12px;font-size:13px}
+.empty{padding:28px 0;border-top:1px solid var(--mauve)}
+.sec{max-width:640px;padding-bottom:30px}
+dl{margin:8px 0}dt{color:var(--paper);font-weight:600;margin-top:12px}
+ol,ul.pl{padding-left:20px;color:var(--dim)}li+li{margin-top:6px}
+details{margin:14px 0;border-top:1px solid var(--line)}
+summary{cursor:pointer;padding:12px 0;font-weight:600}
+pre{background:var(--deep);border:1px solid var(--line);padding:12px;overflow-x:auto;font:12px/1.6 var(--mono);color:var(--paper);margin-bottom:10px}
+.foot{max-width:1080px;margin:40px auto 0;padding:14px max(20px,env(safe-area-inset-left));border-top:1px solid var(--line);color:var(--dim)}
+@media(max-width:520px){h2{font-size:23px}}
+</style>
+</head>
+<body data-tab="live">
+<header class="top">
+  <div class="r1"><h1 class="word">Stream</h1><p id="stat" class="mono">Idle</p></div>
+  <nav role="tablist">
+    <button role="tab" data-t="live" aria-selected="true">Live</button>
+    <button role="tab" data-t="sessions" aria-selected="false">Sessions</button>
+    <button role="tab" data-t="setup" aria-selected="false">Setup</button>
+  </nav>
+</header>
+
+<main>
+<section id="p-live" class="pane live">
+  <div>
+    <div class="view">
+      <video id="pv" muted playsinline></video>
+      <div class="vmsg" id="vmsg"><p>Camera is off.</p><button class="btn go" id="btnCam">Turn on camera</button></div>
+      <span class="ov mono" id="ovT" hidden>REC 00:00:00</span>
+      <i class="lvl" id="lvl" hidden><b></b></i>
+    </div>
+    <ul class="marks" id="liveMarks"></ul>
+  </div>
+  <div class="ctl">
+    <div id="alert" class="alert" hidden></div>
+    <div class="field"><span class="lab mono">Source</span>
+      <div class="seg"><button id="mCam" aria-pressed="true">Camera</button><button id="mGame" aria-pressed="false">Game + camera</button></div>
+      <p class="hint" id="hScr" hidden>Game capture needs Chrome or Safari on a computer. This browser can’t capture a window.</p></div>
+    <div class="field"><label class="lab mono" for="selCam">Camera</label>
+      <div class="two"><select id="selCam"><option value="">Default camera</option></select><button class="btn ghost" id="btnFlip">Flip</button></div></div>
+    <div class="field"><label class="lab mono" for="selMic">Microphone</label><select id="selMic"><option value="">Default microphone</option></select></div>
+    <div class="field" id="fGa" hidden><label class="lab mono" for="selGa">Game audio input</label><select id="selGa"><option value="">None</option></select>
+      <p class="hint">Pick BlackHole here to carry the game’s sound. See Setup.</p></div>
+    <div class="field" id="fGd" hidden><label class="lab mono" for="iGd">Game audio delay (ms)</label><input id="iGd" type="number" min="0" max="1000" step="10" inputmode="numeric">
+      <p class="hint">Holds the game’s sound back so it lines up with the picture. See Setup for a tap test.</p></div>
+    <div class="field" id="fCorner" hidden><label class="lab mono" for="selCorner">Camera corner</label>
+      <select id="selCorner"><option value="br">Bottom right</option><option value="bl">Bottom left</option><option value="tr">Top right</option><option value="tl">Top left</option></select></div>
+    <div class="field"><label class="lab mono" for="selQ">Quality</label>
+      <select id="selQ"><option value="540">540p · 1.5 Mbps · weak signal</option><option value="720">720p · 3 Mbps</option><option value="1080">1080p · 6 Mbps</option></select>
+      <p class="hint" id="space"></p></div>
+    <div class="field"><span class="lab mono">Mark with a label</span>
+      <div class="chips"><button class="chip" disabled>Clutch</button><button class="chip" disabled>Funny</button><button class="chip" disabled>Fail</button><button class="chip" disabled>Win</button></div></div>
+  </div>
+</section>
+
+<section id="p-sessions" class="pane" hidden>
+  <h2>Sessions</h2>
+  <p class="hint" style="max-width:56ch">Every recording is kept here, with its marks. Save sends the video and a marks file to Files, where you pick iCloud Drive.</p>
+  <div id="slist" style="margin-top:14px"></div>
+</section>
+
+<section id="p-setup" class="pane sec" hidden>
+  <h2>Relay</h2>
+  <p>A web page can’t send RTMP. This page sends one WebRTC (WHIP) stream to your relay, and the relay passes it to Twitch, TikTok and Instagram. Without a relay, Record only still works.</p>
+  <div class="ctl" style="margin-top:14px">
+    <div class="field"><label class="lab mono" for="iWhip">WHIP URL</label><input id="iWhip" type="url" placeholder="https://stream.example.com/live/whip" autocomplete="off" autocapitalize="off" spellcheck="false"></div>
+    <div class="field"><label class="lab mono" for="iTok">Bearer token (optional)</label><input id="iTok" type="password" autocomplete="off"></div>
+    <div class="two" style="grid-template-columns:1fr 1fr">
+      <div class="field"><label class="lab mono" for="iPre">Clip starts (s before)</label><input id="iPre" type="number" min="0" max="300"></div>
+      <div class="field"><label class="lab mono" for="iPost">Clip ends (s after)</label><input id="iPost" type="number" min="0" max="300"></div>
+    </div>
+    <p class="hint">Saved on this device only.</p>
+  </div>
+
+  <h3 style="margin-top:34px">What each platform needs</h3>
+  <dl>
+    <dt>Twitch</dt><dd>Stream key from Creator Dashboard → Settings → Stream. It doesn’t change. Twitch also has an undocumented beta WHIP endpoint; this app doesn’t use it.</dd>
+    <dt>TikTok</dt><dd>1,000+ followers and age 18+, and even then not every account gets a stream key. The server URL and key come from LIVE Producer on a computer and change every stream.</dd>
+    <dt>Instagram</dt><dd>A Creator or Business account. On instagram.com from a computer: Create → Live video shows a server URL and key. They change every stream. Personal accounts can’t.</dd>
+  </dl>
+  <p>So for TikTok and Instagram, run one command on the relay with the fresh URL and key before each stream. The steps are in the recipe below. Twitch only needs it once.</p>
+
+  <details><summary>Relay recipe (MediaMTX, Caddy, ffmpeg)</summary>
+    <p>Serve this page from the relay itself with Caddy, so the page and the WHIP endpoint share one origin and one certificate. Replace <span class="cmd">stream.example.com</span> with your domain everywhere. Enter <span class="cmd">https://stream.example.com/live/whip</span> as the WHIP URL above, and the value of <span class="cmd">WHIP_TOKEN</span> as the Bearer token.</p>
+    <p style="margin-top:8px">Open TCP 22, 80 and 443, and UDP and TCP 8189. Never open 8889 or 8554. Each platform is its own systemd service, so changing one key restarts only that push and leaves the ingest and the recordings running. MediaMTX can’t push RTMP itself, so ffmpeg does it.</p>
+    <p class="cmd" style="margin:16px 0 4px">/opt/mediamtx/mediamtx.yml</p>
+<pre>logLevel: info
+api: no
+rtmp: no
+hls: no
+srt: no
+rtspAddress: 127.0.0.1:8554
+webrtc: yes
+webrtcAddress: 127.0.0.1:8889
+webrtcEncryption: no
+webrtcAllowOrigins: ['https://stream.example.com']
+webrtcLocalUDPAddress: :8189
+webrtcLocalTCPAddress: :8189
+webrtcAdditionalHosts: ['stream.example.com']
+webrtcICEServers2:
+  - url: stun:stun.cloudflare.com:3478
+authInternalUsers:
+  - user: any
+    pass:
+    ips: ['127.0.0.1', '::1']
+    permissions:
+      - action: publish
+        path: live
+      - action: read
+        path: live
+paths:
+  live:
+    record: yes
+    recordPath: /var/lib/stream/recordings/%path/%Y-%m-%d_%H-%M-%S-%f
+    recordFormat: fmp4
+    recordPartDuration: 1s
+    recordSegmentDuration: 1h
+    recordDeleteAfter: 7d</pre>
+    <p class="cmd" style="margin:16px 0 4px">Caddyfile (set WHIP_TOKEN in Caddy’s service environment)</p>
+<pre>stream.example.com {
+	@whip path /live/*
+	handle @whip {
+		@authed header Authorization "Bearer {$WHIP_TOKEN}"
+		handle @authed {
+			reverse_proxy 127.0.0.1:8889
+		}
+		respond 401
+	}
+	handle {
+		root * /var/www/stream
+		file_server
+	}
+}</pre>
+    <p class="cmd" style="margin:16px 0 4px">/opt/stream/push.sh</p>
+<pre>#!/bin/bash
+exec ffmpeg -hide_banner -loglevel warning -rtsp_transport tcp \
+  -i rtsp://127.0.0.1:8554/live -r 30 \
+  -c:v libx264 -preset veryfast -tune zerolatency -b:v 3000k -maxrate 3000k -bufsize 6000k \
+  -g 60 -keyint_min 60 -sc_threshold 0 -pix_fmt yuv420p \
+  -c:a aac -b:a 128k -ar 48000 -f flv "${URL%/}/${KEY}"</pre>
+    <p class="cmd" style="margin:16px 0 4px">/etc/systemd/system/dest@.service</p>
+<pre>[Unit]
+Description=Push to %i
+After=mediamtx.service
+StartLimitIntervalSec=0
+[Service]
+User=stream
+EnvironmentFile=/etc/stream/%i.env
+ExecStart=/opt/stream/push.sh
+Restart=always
+RestartSec=2</pre>
+    <p class="cmd" style="margin:16px 0 4px">/usr/local/bin/dest (create /etc/stream first, then chmod +x)</p>
+<pre>#!/bin/bash
+case "$1" in
+ set) read -rp "Server URL: " u; read -rsp "Stream key: " k; echo
+      printf 'URL="%s"\nKEY="%s"\n' "$u" "$k" &gt; /etc/stream/$2.env
+      chown root:stream /etc/stream/$2.env; chmod 640 /etc/stream/$2.env
+      systemctl enable --now dest@$2; systemctl restart dest@$2 ;;
+ off) systemctl disable --now dest@$2; rm -f /etc/stream/$2.env ;;
+esac</pre>
+    <h3>Each stream</h3>
+    <ol>
+      <li>Start the stream in this app.</li>
+      <li>On a computer, copy the fresh server URL and key from the platform’s producer page.</li>
+      <li>Run <span class="cmd">ssh -t relay sudo dest set instagram</span> (or <span class="cmd">tiktok</span>, <span class="cmd">twitch</span>) and paste both when asked.</li>
+      <li>Press Go live on the platform once its preview appears.</li>
+      <li>Afterwards run <span class="cmd">sudo dest off instagram</span>.</li>
+    </ol>
+    <h3>Before you rely on it</h3>
+    <ul class="pl">
+      <li>Run MediaMTX once in the foreground first. It rejects config keys it doesn’t know, and recent releases renamed some of them.</li>
+      <li>Re-encoding two destinations at 720p30 should fit on 2 vCPUs, but that is untested. A 1 vCPU plan only suits <span class="cmd">-c:v copy</span>. Check the provider’s live price.</li>
+      <li>At home you need UDP and TCP 8189 plus 80 and 443 forwarded, no CGNAT, and dynamic DNS.</li>
+      <li>If audio is missing, read the MediaMTX log. Version 1.15.5 reported Opus errors with mono audio (issue 5293).</li>
+    </ul>
+  </details>
+
+  <h3>Game mode on a Mac</h3>
+  <ol>
+    <li>macOS Sequoia or later, iPhone Mirroring on, iPhone locked and nearby.</li>
+    <li>Open this page in Chrome or Safari on the Mac. Choose <b style="color:var(--paper)">Game + camera</b> and pick the iPhone Mirroring window.</li>
+    <li>Camera: the Mac’s, or the iPhone through Continuity Camera.</li>
+    <li>Game sound plays out of the Mac and browsers can’t capture it. Install BlackHole 2ch, make a Multi-Output device (speakers + BlackHole) in Audio MIDI Setup, set it as the Mac’s output, then choose BlackHole as <b style="color:var(--paper)">Game audio input</b>. Your microphone stays separate.</li>
+    <li>Set BlackHole, the Multi-Output device and your microphone to 48,000 Hz in Audio MIDI Setup. In the Multi-Output device, make the physical output the clock source and tick Drift Correction on BlackHole.</li>
+    <li>To line up sound and picture, record 10 seconds of tapping on the game screen, step through it in a frame-stepping player, and enter the gap in <b style="color:var(--paper)">Game audio delay</b>. Repeat after 30 minutes to check for drift. The delay can only hold the sound back, not bring it forward.</li>
+    <li>Keep this tab visible, or on a second display, while you play.</li>
+  </ol>
+
+  <h3>Limits</h3>
+  <ul class="pl">
+    <li>iPhone Safari can’t capture the phone’s own screen or another app’s sound. Streaming a game played on the phone itself needs a native app, or the Mac route above.</li>
+    <li>On the phone the screen must stay on with this page in front. Locking it or switching apps stops the camera and the recording.</li>
+    <li>Recording is written to browser storage every couple of seconds. A crash loses the last few seconds, and the session reappears under Sessions marked Interrupted. Chrome’s MP4 mode delivers its first media only after about 10 seconds, so a crash before then loses the whole recording; on Chrome this page records WebM instead. Save to Files soon after any stream, because browsers can clear storage when space is short.</li>
+  </ul>
+</section>
+</main>
+
+<div class="bar"><div>
+  <button class="btn" id="btnRec">Record only</button>
+  <button class="btn go" id="btnLive">Go live</button>
+  <button class="btn go" id="btnMark" hidden>Mark moment</button>
+  <button class="btn" id="btnEnd" hidden>End</button>
+</div></div>
+<div id="toast" role="status" hidden></div>
+<footer class="foot mono">Stream · 9 Nov 2026 · Recordings and settings stay on this device. The only network traffic is to the relay URL you enter.</footer>
+
+<script>
+'use strict';
+const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
+const QUAL={540:{w:960,h:540,bps:1.5e6},720:{w:1280,h:720,bps:3e6},1080:{w:1920,h:1080,bps:6e6}};
+let cfg={whip:'',token:'',pre:20,post:10,q:'720',corner:'br',cam:'',mic:'',gaud:'',gdelay:0};
+try{cfg={...cfg,...JSON.parse(localStorage.getItem('stream.cfg')||'{}')}}catch{}
+const saveCfg=()=>{try{localStorage.setItem('stream.cfg',JSON.stringify(cfg))}catch{}};
+const S={media:null,gmedia:null,scr:null,out:null,actx:null,an:null,dly:null,tick:null,rec:null,sess:null,t0:0,chain:Promise.resolve(),pc:null,res:null,active:false,wake:null,game:false,live:false,stopping:false};
+const blobs=new Map(),sessions=new Map();
+const CAN_SCREEN=!!(navigator.mediaDevices&&navigator.mediaDevices.getDisplayMedia);
+const pad=n=>String(n).padStart(2,'0');
+const hms=s=>{s=Math.max(0,Math.floor(s));return pad(s/3600|0)+':'+pad(s%3600/60|0)+':'+pad(s%60)};
+const baseMime=m=>(m||'video/mp4').split(';')[0];
+const authH=()=>cfg.token?{Authorization:'Bearer '+cfg.token}:{};
+
+function say(msg,kind){const a=$('#alert');a.hidden=!msg;a.textContent='';if(!msg)return;const l=document.createElement('b');l.className='mono';l.textContent=kind==='err'?'Problem':'Note';const p=document.createElement('span');p.textContent=msg;a.append(l,p)}
+function toast(m){const t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>t.hidden=true,2800)}
+function h(tag,props,...kids){const e=document.createElement(tag);Object.assign(e,props||{});kids.forEach(k=>e.append(k));return e}
+
+/* ---------- storage ---------- */
+const db={d:null,m:{sessions:new Map(),chunks:new Map()},
+ open(){return new Promise(r=>{try{const q=indexedDB.open('stream',1);q.onupgradeneeded=()=>{q.result.createObjectStore('sessions',{keyPath:'id'});q.result.createObjectStore('chunks',{keyPath:'k'})};q.onsuccess=()=>{this.d=q.result;r()};q.onerror=q.onblocked=()=>r()}catch{r()}})},
+ run(st,mode,f){return new Promise((res,rej)=>{const t=this.d.transaction(st,mode);const q=f(t.objectStore(st));t.oncomplete=()=>res(q&&q.result);t.onerror=t.onabort=()=>rej(t.error)})},
+ put(st,v){if(!this.d){this.m[st].set(v.id||v.k,v);return Promise.resolve()}return this.run(st,'readwrite',s=>s.put(v))},
+ all(st){if(!this.d)return Promise.resolve([...this.m[st].values()]);return this.run(st,'readonly',s=>s.getAll())},
+ async chunks(id){if(!this.d)return [...this.m.chunks.values()].filter(c=>c.k.startsWith(id+':')).sort((a,b)=>a.k<b.k?-1:1).map(c=>c.data);const rows=await this.run('chunks','readonly',s=>s.getAll(IDBKeyRange.bound(id+':',id+':\uffff')));return rows.map(c=>c.data)},
+ async del(id){if(!this.d){this.m.sessions.delete(id);[...this.m.chunks.keys()].filter(k=>k.startsWith(id+':')).forEach(k=>this.m.chunks.delete(k));return}await this.run('sessions','readwrite',s=>s.delete(id));await this.run('chunks','readwrite',s=>s.delete(IDBKeyRange.bound(id+':',id+':\uffff')))}};
+
+/* ---------- inputs ---------- */
+function fill(sel,items,cur,pre,first){const s=$(sel);s.textContent='';if(first)s.append(h('option',{value:'',textContent:first}));items.forEach((x,i)=>s.append(h('option',{value:x.deviceId,textContent:x.label||pre+' '+(i+1)})));if(cur&&items.some(x=>x.deviceId===cur))s.value=cur}
+async function listDevices(){const d=await navigator.mediaDevices.enumerateDevices();
+ fill('#selCam',d.filter(x=>x.kind==='videoinput'),cfg.cam,'Camera');
+ fill('#selMic',d.filter(x=>x.kind==='audioinput'),cfg.mic,'Microphone');
+ fill('#selGa',d.filter(x=>x.kind==='audioinput'),cfg.gaud,'Microphone','None')}
+function killTick(){if(S.tick){S.tick.terminate();S.tick=null}}
+function stopInputs(){[S.media,S.gmedia,S.scr].forEach(m=>m&&m.getTracks().forEach(t=>t.stop()));S.media=S.gmedia=S.scr=S.out=S.an=null;killTick();$('#pv').srcObject=null}
+async function startInputs(){
+  const keepScr=S.scr;[S.media,S.gmedia].forEach(m=>m&&m.getTracks().forEach(t=>t.stop()));S.media=S.gmedia=null;killTick();
+  const q=QUAL[cfg.q],v={width:{ideal:q.w},height:{ideal:q.h},frameRate:{ideal:30}},a={echoCancellation:true,noiseSuppression:true,autoGainControl:true};
+  const get=exact=>navigator.mediaDevices.getUserMedia({video:exact&&cfg.cam?{...v,deviceId:{exact:cfg.cam}}:{...v,facingMode:'user'},audio:exact&&cfg.mic?{...a,deviceId:{exact:cfg.mic}}:a});
+  try{S.media=await get(true)}catch(e){if(e.name==='OverconstrainedError'||(e.name==='NotFoundError'&&(cfg.cam||cfg.mic))){cfg.cam=cfg.mic='';S.media=await get(false)}else throw e}
+  if(cfg.gaud&&S.game){try{S.gmedia=await navigator.mediaDevices.getUserMedia({audio:{deviceId:{exact:cfg.gaud},echoCancellation:false,noiseSuppression:false,autoGainControl:false,channelCount:{ideal:2},sampleRate:{ideal:48000},latency:{ideal:0}}})}catch{say('Game audio device unavailable. Continuing without it.')}}
+  S.scr=keepScr;
+  await listDevices();
+  const id=S.media.getVideoTracks()[0].getSettings().deviceId;if(id&&[...$('#selCam').options].some(o=>o.value===id))$('#selCam').value=id;
+  build()}
+function fit(g,v,W,H){const r=Math.min(W/v.videoWidth,H/v.videoHeight),w=v.videoWidth*r,x=(W-w)/2,y=(H-v.videoHeight*r)/2;g.drawImage(v,x,y,w,v.videoHeight*r)}
+function composite(camTrack){
+  const q=QUAL[cfg.q],c=document.createElement('canvas');c.width=q.w;c.height=q.h;const g=c.getContext('2d');
+  const mk=t=>{const v=document.createElement('video');v.muted=true;v.playsInline=true;v.srcObject=new MediaStream([t]);v.play().catch(()=>{});return v};
+  const vc=mk(camTrack),st=S.scr.getVideoTracks()[0],vs=mk(st);
+  const draw=()=>{const W=c.width,H=c.height;g.fillStyle='#000';g.fillRect(0,0,W,H);
+   const game=st.readyState==='live'&&vs.videoWidth;if(game)fit(g,vs,W,H);
+   if(vc.videoWidth){if(!game)fit(g,vc,W,H);else{const pw=Math.round(W*.24),ph=Math.round(pw*vc.videoHeight/vc.videoWidth),m=Math.round(W*.02),x=cfg.corner.includes('l')?m:W-pw-m,y=cfg.corner.includes('t')?m:H-ph-m;g.drawImage(vc,x,y,pw,ph);g.strokeStyle='#53393a';g.lineWidth=3;g.strokeRect(x,y,pw,ph)}}};
+  S.tick=new Worker(URL.createObjectURL(new Blob(['setInterval(()=>postMessage(0),33)'],{type:'text/javascript'})));S.tick.onmessage=draw;draw();
+  return c.captureStream(30).getVideoTracks()[0]}
+function mkAC(){const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return null;try{return new AC({sampleRate:48000,latencyHint:'interactive'})}catch{try{return new AC()}catch{return null}}}
+function build(){
+  killTick();
+  const vt=S.media.getVideoTracks()[0],outV=S.scr?composite(vt):vt;
+  const mics=S.media.getAudioTracks(),gt=S.gmedia?S.gmedia.getAudioTracks():[],sa=S.scr?S.scr.getAudioTracks():[],all=[...mics,...gt,...sa];
+  const ac=S.actx||(S.actx=mkAC());let at=all[0]||null;S.dly=null;
+  if(ac){ac.resume&&ac.resume();
+   if(mics[0]){S.an=ac.createAnalyser();S.an.fftSize=512;ac.createMediaStreamSource(new MediaStream([mics[0]])).connect(S.an)}
+   if(all.length>1||gt.length){const d=ac.createMediaStreamDestination();
+    [...mics,...sa].forEach(t=>ac.createMediaStreamSource(new MediaStream([t])).connect(d));
+    if(gt.length){S.dly=ac.createDelay(1);S.dly.delayTime.value=cfg.gdelay/1000;S.dly.connect(d);gt.forEach(t=>ac.createMediaStreamSource(new MediaStream([t])).connect(S.dly))}
+    at=d.stream.getAudioTracks()[0]}}
+  S.out=new MediaStream([outV,at].filter(Boolean));
+  const pv=$('#pv');pv.srcObject=S.out;pv.play().catch(()=>{});
+  const s=vt.getSettings();$('.view').style.aspectRatio=S.scr?QUAL[cfg.q].w+'/'+QUAL[cfg.q].h:(s.width&&s.height?s.width+'/'+s.height:'16/9');
+  setUi()}
+function errText(e){const n=e&&e.name;
+ if(n==='NotAllowedError'||n==='SecurityError')return 'Camera or microphone is blocked. Allow both for this site in your browser settings, then try again.';
+ if(n==='NotFoundError')return 'No camera or microphone found.';
+ if(n==='NotReadableError')return 'The camera is in use by another app. Close it and try again.';
+ return 'Could not start the camera: '+(e&&e.message||e)}
+async function ensureInputs(){if(S.out)return true;try{await startInputs();say('');return true}catch(e){say(errText(e),'err');return false}}
+
+/* ---------- recording ---------- */
+const CHROMIUM=!!(navigator.userAgentData&&navigator.userAgentData.brands&&navigator.userAgentData.brands.some(b=>/Chromium|Google Chrome|Microsoft Edge/.test(b.brand)));
+const MP4=['video/mp4;codecs=avc1.42E01E,mp4a.40.2','video/mp4'],WEBM=['video/webm;codecs=vp8,opus','video/webm;codecs=vp9,opus','video/webm'];
+function pickMime(){return (CHROMIUM?[...WEBM,...MP4]:[...MP4,...WEBM]).find(m=>window.MediaRecorder&&MediaRecorder.isTypeSupported(m))||''}
+async function startRec(){
+  if(!window.MediaRecorder){say('This browser can’t record video.','err');return false}
+  try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch{}
+  const id='s'+Date.now(),mime=pickMime(),d=new Date();
+  const r=new MediaRecorder(S.out,{...(mime?{mimeType:mime}:{}),videoBitsPerSecond:QUAL[cfg.q].bps,audioBitsPerSecond:128000});
+  const sess={id,name:'Stream '+d.getDate()+' '+d.toLocaleString('en-GB',{month:'short'})+' '+pad(d.getHours())+':'+pad(d.getMinutes()),started:Date.now(),mime:r.mimeType||mime||'video/webm',marks:[],status:'recording',dur:0,size:0};
+  let seq=0;S.sess=sess;S.rec=r;S.t0=performance.now();
+  r.ondataavailable=e=>{if(!e.data||!e.data.size)return;const k=id+':'+String(seq++).padStart(6,'0');sess.size+=e.data.size;sess.dur=(performance.now()-S.t0)/1000;S.chain=S.chain.then(()=>db.put('chunks',{k,data:e.data})).then(()=>db.put('sessions',{...sess})).catch(()=>say('Storage is full or unavailable. Save this session as soon as you can.','err'))};
+  r.start(2000);await db.put('sessions',{...sess});
+  if(!db.d)say('This browser can’t store recordings safely (private mode?). They stay in memory until you save them.');
+  return true}
+function addMark(label){if(!S.sess)return;const t=(performance.now()-S.t0)/1000;S.sess.marks.push({t,label:label||'Moment'});db.put('sessions',{...S.sess});renderLiveMarks();toast('Marked '+hms(t));navigator.vibrate&&navigator.vibrate(25)}
+function renderLiveMarks(){const u=$('#liveMarks');u.textContent='';if(!S.sess)return;[...S.sess.marks].reverse().forEach(m=>u.append(h('li',null,h('span',{className:'t mono',textContent:hms(m.t)}),h('span',{textContent:m.label}))))}
+async function wl(on){try{if(on&&'wakeLock' in navigator&&!S.wake){S.wake=await navigator.wakeLock.request('screen');S.wake.addEventListener('release',()=>S.wake=null)}else if(!on&&S.wake){await S.wake.release();S.wake=null}}catch{}}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&S.active)wl(true)});
+
+async function begin(live){
+  if(live){
+    if(!cfg.whip){say('Add your relay’s WHIP URL in Setup first. Record only works without it.','err');return}
+    if(location.protocol==='https:'&&/^http:\/\//i.test(cfg.whip)&&!/\/\/(localhost|127\.0\.0\.1)/i.test(cfg.whip)){say('This page is HTTPS, so the relay URL must be HTTPS too.','err');return}}
+  if(!await ensureInputs())return;
+  if(!await startRec())return;
+  S.active=true;wl(true);say('');setUi();renderLiveMarks();
+  if(live)goLive().catch(e=>{stopLive();say('Could not reach the relay ('+(e.message||e)+'). Still recording.','err');setUi()})}
+async function end(){
+  if(S.stopping)return;S.stopping=true;
+  stopLive();
+  const r=S.rec,s=S.sess;S.rec=null;
+  if(r&&s){s.dur=(performance.now()-S.t0)/1000;if(r.state!=='inactive')await new Promise(res=>{r.onstop=res;r.stop()});await S.chain;s.status='done';await db.put('sessions',{...s});blobs.set(s.id,new Blob(await db.chunks(s.id),{type:baseMime(s.mime)}))}
+  S.sess=null;S.active=false;wl(false);S.stopping=false;setUi();renderLiveMarks();renderSessions();toast('Saved to Sessions.')}
+
+/* ---------- WHIP ---------- */
+const waitIce=(pc,ms)=>new Promise(res=>{if(pc.iceGatheringState==='complete')return res();const f=()=>{if(pc.iceGatheringState==='complete'){pc.removeEventListener('icegatheringstatechange',f);res()}};pc.addEventListener('icegatheringstatechange',f);setTimeout(res,ms)});
+async function goLive(){
+  const pc=new RTCPeerConnection({iceServers:[{urls:'stun:stun.cloudflare.com:3478'}],bundlePolicy:'max-bundle'});S.pc=pc;
+  S.out.getTracks().forEach(t=>pc.addTransceiver(t,{direction:'sendonly',streams:[S.out]}));
+  try{const caps=RTCRtpSender.getCapabilities('video').codecs,hc=caps.filter(c=>/h264/i.test(c.mimeType)),tv=pc.getTransceivers().find(t=>t.sender.track&&t.sender.track.kind==='video');if(hc.length&&tv.setCodecPreferences)tv.setCodecPreferences([...hc,...caps.filter(c=>!/h264/i.test(c.mimeType))])}catch{}
+  pc.onconnectionstatechange=()=>{const s=pc.connectionState;if(pc!==S.pc)return;if(s==='connected'){S.live=true;setUi()}else if(s==='failed'||s==='closed'){stopLive();if(S.active)say('The relay connection dropped. Still recording.','err');setUi()}};
+  await pc.setLocalDescription(await pc.createOffer());await waitIce(pc,2500);
+  const res=await fetch(cfg.whip,{method:'POST',headers:{'Content-Type':'application/sdp',...authH()},body:pc.localDescription.sdp});
+  if(!res.ok)throw new Error('HTTP '+res.status);
+  const loc=res.headers.get('Location');S.res=loc?new URL(loc,cfg.whip).href:null;
+  await pc.setRemoteDescription({type:'answer',sdp:await res.text()});
+  try{const vs=pc.getSenders().find(s=>s.track&&s.track.kind==='video'),p=vs.getParameters();if(!p.encodings||!p.encodings.length)p.encodings=[{}];p.encodings[0].maxBitrate=QUAL[cfg.q].bps;await vs.setParameters(p)}catch{}}
+function stopLive(){const pc=S.pc,res=S.res;S.pc=null;S.res=null;S.live=false;if(pc)try{pc.close()}catch{};if(res)fetch(res,{method:'DELETE',headers:authH()}).catch(()=>{})}
+
+/* ---------- ui ---------- */
+function setUi(){
+  const on=!!S.out,act=S.active;
+  $('#vmsg').hidden=on;$('#ovT').hidden=!act;$('#lvl').hidden=!on;
+  $('#btnRec').hidden=$('#btnLive').hidden=act;$('#btnMark').hidden=$('#btnEnd').hidden=!act;
+  $$('.chip').forEach(b=>b.disabled=!act);
+  ['#selCam','#selMic','#selGa','#selQ','#mCam','#mGame','#btnFlip'].forEach(s=>$(s).disabled=act);
+  if(!CAN_SCREEN)$('#mGame').disabled=true;
+  $('#mCam').setAttribute('aria-pressed',String(!S.game));$('#mGame').setAttribute('aria-pressed',String(S.game));
+  $('#fGa').hidden=$('#fGd').hidden=$('#fCorner').hidden=!S.game;
+  tickStat()}
+function tickStat(){const st=$('#stat');
+  if(S.active){const t=hms((performance.now()-S.t0)/1000);st.textContent=(S.live?'Live · ':S.pc?'Connecting · ':'')+'Rec '+t;st.className='mono on';$('#ovT').textContent='REC '+t}
+  else{st.textContent=S.out?'Camera ready':'Idle';st.className='mono'}
+  if(S.an){const d=new Uint8Array(S.an.fftSize);S.an.getByteTimeDomainData(d);let m=0;for(const v of d)m=Math.max(m,Math.abs(v-128));$('#lvl b').style.width=Math.min(100,m/128*140)+'%'}}
+setInterval(tickStat,250);
+async function showSpace(){try{const e=await navigator.storage.estimate(),free=e.quota-e.usage,bps=QUAL[cfg.q].bps+128000;$('#space').textContent=(free/1e9).toFixed(1)+' GB free for recordings (browser estimate), about '+(free/(bps/8*3600)).toFixed(1)+' h at this quality.'}catch{$('#space').textContent=''}}
+
+$$('nav button').forEach(b=>b.onclick=()=>{$$('nav button').forEach(x=>x.setAttribute('aria-selected',String(x===b)));$$('.pane').forEach(p=>p.hidden=p.id!=='p-'+b.dataset.t);document.body.dataset.tab=b.dataset.t;if(b.dataset.t==='sessions')renderSessions()});
+$('#btnCam').onclick=ensureInputs;
+$('#btnRec').onclick=()=>begin(false);$('#btnLive').onclick=()=>begin(true);$('#btnEnd').onclick=end;
+$('#btnMark').onclick=()=>addMark('Moment');
+$$('.chip').forEach(c=>c.onclick=()=>addMark(c.textContent));
+document.addEventListener('keydown',e=>{if(e.key==='m'&&S.active&&!/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName))addMark('Moment')});
+$('#selCam').onchange=e=>{cfg.cam=e.target.value;saveCfg();if(S.out)startInputs().catch(x=>say(errText(x),'err'))};
+$('#selMic').onchange=e=>{cfg.mic=e.target.value;saveCfg();if(S.out)startInputs().catch(x=>say(errText(x),'err'))};
+$('#selGa').onchange=e=>{cfg.gaud=e.target.value;saveCfg();if(S.out)startInputs().catch(x=>say(errText(x),'err'))};
+$('#selQ').onchange=e=>{cfg.q=e.target.value;saveCfg();showSpace();if(S.out)startInputs().catch(x=>say(errText(x),'err'))};
+$('#selCorner').onchange=e=>{cfg.corner=e.target.value;saveCfg()};
+$('#btnFlip').onclick=()=>{const s=$('#selCam');if(s.options.length<2){toast('Only one camera found.');return}s.selectedIndex=(s.selectedIndex+1)%s.options.length;cfg.cam=s.value;saveCfg();if(S.out)startInputs().catch(x=>say(errText(x),'err'))};
+$('#mGame').onclick=async()=>{
+  if(S.game)return;
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getDisplayMedia){say('This browser can’t capture a window. Use Chrome or Safari on a Mac.','err');return}
+  let scr;try{scr=await navigator.mediaDevices.getDisplayMedia({video:{frameRate:{ideal:30}},audio:true})}catch(e){if(e.name!=='NotAllowedError')say('Could not capture a window: '+e.message,'err');return}
+  S.scr=scr;S.game=true;
+  scr.getVideoTracks()[0].addEventListener('ended',()=>{if(S.scr!==scr)return;if(S.active)say('The game window closed. The stream now shows your camera only.');else{S.scr=null;S.game=false;S.media?build():setUi()}});
+  say('');try{S.media?build():await startInputs()}catch(e){say(errText(e),'err')}};
+$('#mCam').onclick=()=>{if(!S.game)return;if(S.scr)S.scr.getTracks().forEach(t=>t.stop());S.scr=null;S.game=false;S.media?build():setUi()};
+
+/* ---------- sessions ---------- */
+const fmtSize=b=>b>=1e9?(b/1e9).toFixed(2)+' GB':(b/1e6).toFixed(1)+' MB';
+function marksText(s){const L=[s.name,'Recorded '+new Date(s.started).toLocaleString(),'Clip window: '+cfg.pre+' s before, '+cfg.post+' s after',''];s.marks.forEach(m=>L.push(hms(m.t)+'  '+m.label+'   clip '+hms(m.t-cfg.pre)+' to '+hms(m.t+cfg.post)));return L.join('\n')}
+async function getBlob(id){if(blobs.has(id))return blobs.get(id);const s=sessions.get(id),b=new Blob(await db.chunks(id),{type:baseMime(s.mime)});blobs.set(id,b);return b}
+function fname(s,ext){return s.name.replace(/[^\w\- ]+/g,'').trim().replace(/\s+/g,'-')+'.'+ext}
+function download(f){const a=h('a',{href:URL.createObjectURL(f),download:f.name});document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000)}
+async function saveSession(id){
+  const s=sessions.get(id);let b=blobs.get(id);if(!b){toast('Preparing file…');b=await getBlob(id)}
+  if(!b.size){toast('This session has no video data.');return}
+  const vf=new File([b],fname(s,s.mime.includes('mp4')?'mp4':'webm'),{type:b.type}),mf=new File([marksText(s)],fname(s,'marks.txt'),{type:'text/plain'});
+  const files=s.marks.length?[vf,mf]:[vf];
+  if(navigator.canShare&&navigator.canShare({files})){try{await navigator.share({files,title:s.name});return}catch(e){if(e.name==='AbortError')return;if(e.name==='NotAllowedError'){toast('File is ready. Tap Save again.');return}}}
+  files.forEach(download)}
+async function renderSessions(){
+  const list=await db.all('sessions');list.sort((a,b)=>b.started-a.started);sessions.clear();list.forEach(s=>sessions.set(s.id,s));
+  const root=$('#slist');root.textContent='';
+  if(!list.length){root.append(h('p',{className:'empty',textContent:'Nothing recorded yet. Press Record only or Go live on the Live tab.'}));return}
+  list.forEach(s=>root.append(card(s)))}
+/* Chrome’s MediaRecorder WebM has no duration header; seeking to the end makes the player work it out */
+function fixDur(v){v.addEventListener('loadedmetadata',()=>{if(v.duration!==Infinity)return;const back=()=>{if(isFinite(v.duration)){v.removeEventListener('timeupdate',back);v.currentTime=0}};v.addEventListener('timeupdate',back);v.currentTime=1e101},{once:true})}
+function card(s){
+  const cur=S.sess&&S.sess.id===s.id,broken=s.status==='recording'&&!cur;
+  const name=h('input',{className:'name',type:'text',value:s.name,'aria-label':'Session name'});name.onchange=()=>{s.name=name.value.trim()||s.name;db.put('sessions',s)};
+  const meta=h('p',{className:'meta mono',textContent:[new Date(s.started).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}),hms(s.dur),fmtSize(s.size),s.mime.includes('mp4')?'mp4':'webm',s.marks.length+' marks',broken?'Interrupted':cur?'Recording':''].filter(Boolean).join(' · ')});
+  const rev=h('div'),mks=h('div');
+  const save=h('button',{className:'btn go',textContent:'Save video + marks',disabled:cur});save.onclick=()=>saveSession(s.id);
+  const review=h('button',{className:'btn',textContent:'Review',disabled:cur});
+  review.onclick=async()=>{if(rev.firstChild){const v=rev.firstChild;URL.revokeObjectURL(v.src);rev.textContent='';review.textContent='Review';return}const b=await getBlob(s.id);const v=h('video',{controls:true,playsInline:true,src:URL.createObjectURL(b)});fixDur(v);rev.append(v);review.textContent='Close review'};
+  const copy=h('button',{className:'btn ghost',textContent:'Copy marks',disabled:!s.marks.length});copy.onclick=async()=>{try{await navigator.clipboard.writeText(marksText(s));toast('Marks copied.')}catch{toast('Could not copy. Use Save.')}};
+  const del=h('button',{className:'btn ghost',textContent:'Delete',disabled:cur});del.onclick=async()=>{if(!confirm('Delete “'+s.name+'”? This removes the video from this device.'))return;await db.del(s.id);blobs.delete(s.id);renderSessions()};
+  s.marks.forEach((m,i)=>{const t=h('input',{type:'text',value:m.label,'aria-label':'Mark label'});t.onchange=()=>{m.label=t.value;db.put('sessions',s)};
+   const jump=h('button',{className:'btn ghost',textContent:'Jump'});jump.onclick=()=>{const v=rev.firstChild;if(!v){toast('Open Review first.');return}v.currentTime=Math.max(0,m.t-cfg.pre);v.play().catch(()=>{})};
+   const x=h('button',{className:'btn ghost',textContent:'×','aria-label':'Remove mark'});x.onclick=()=>{s.marks.splice(i,1);db.put('sessions',s).then(renderSessions)};
+   mks.append(h('div',{className:'mk'},h('span',{className:'mono',textContent:hms(m.t)}),t,jump,x))});
+  return h('article',{className:'sess'},name,meta,h('div',{className:'acts'},save,review,copy,del),rev,mks)}
+
+/* ---------- setup ---------- */
+[['#iWhip','whip'],['#iTok','token']].forEach(([s,k])=>{const e=$(s);e.value=cfg[k];e.oninput=()=>{cfg[k]=e.value.trim();saveCfg()}});
+[['#iPre','pre'],['#iPost','post']].forEach(([s,k])=>{const e=$(s);e.value=cfg[k];e.oninput=()=>{cfg[k]=Math.max(0,Math.min(300,+e.value||0));saveCfg()}});
+$('#selQ').value=cfg.q;$('#selCorner').value=cfg.corner;
+{const e=$('#iGd');e.value=cfg.gdelay;e.oninput=()=>{cfg.gdelay=Math.max(0,Math.min(1000,+e.value||0));saveCfg();if(S.dly)S.dly.delayTime.value=cfg.gdelay/1000}}
+
+/* ---------- boot ---------- */
+(()=>{const c=document.createElement('canvas');c.width=c.height=180;const g=c.getContext('2d');g.fillStyle='#53393a';g.fillRect(0,0,180,180);g.fillStyle='#c1798d';g.beginPath();g.arc(90,90,34,0,7);g.fill();document.head.append(h('link',{rel:'apple-touch-icon',href:c.toDataURL('image/png')}))})();
+window.addEventListener('beforeunload',e=>{if(S.active){e.preventDefault();e.returnValue=''}});
+(async()=>{
+  await db.open();showSpace();renderSessions();$('#hScr').hidden=CAN_SCREEN;
+  if(!window.isSecureContext||!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){say('The camera needs HTTPS (or localhost). A plain http://192.168… address won’t work on iPhone. Host this file on an HTTPS site.','err');$('#btnCam').disabled=$('#btnRec').disabled=$('#btnLive').disabled=true}
+  setUi()})();
+</script>
+</body>
+</html>

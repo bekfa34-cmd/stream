@@ -1,0 +1,2 @@
+<pre id=o></pre><button onclick="go()">Probe</button>
+<script>async function go(){const s=await navigator.mediaDevices.getUserMedia({video:true,audio:true}),t=performance.now(),r=new MediaRecorder(s,{mimeType:MediaRecorder.isTypeSupported('video/mp4')?'video/mp4':''});r.ondataavailable=e=>o.textContent+=((performance.now()-t)/1000).toFixed(1)+'s '+e.data.size+' B\n';r.start(2000);setTimeout(()=>{r.stop();s.getTracks().forEach(x=>x.stop())},30000)}</script>
