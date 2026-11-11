@@ -17,7 +17,7 @@ The camera needs HTTPS or localhost:
 cd ~/Documents/stream && python3 -m http.server 8898
 ```
 
-Then open <http://localhost:8898/stream.html>. On an iPhone, host it on an HTTPS site (ideally the relay itself, see Setup).
+Then open <http://localhost:8898/stream.html>. On an iPhone, open <https://bekfa34-cmd.github.io/stream/> (GitHub Pages, rebuilt on every push to `main`) and use Share → Add to Home Screen. For going live, hosting it on the relay itself is still the cleanest (one origin, see Setup); if you keep GitHub Pages, add `https://bekfa34-cmd.github.io` to `webrtcAllowOrigins` and let OPTIONS through Caddy without the token.
 
 ## Where it came from
 
